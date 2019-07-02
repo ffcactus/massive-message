@@ -1,0 +1,52 @@
+version: "3.2"
+
+services:
+  receiver:
+    image: receiver.message:latest
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "162:162/udp"
+    depends_on:
+      - "rabbitmq"
+    networks:
+      - networks_front
+      - networks_service
+    # command: "./wait-for.sh rabbitmq:5672 -- ./receiver"
+    command: "sleep 9999999"
+  server:
+    image: server.message:latest
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    depends_on:
+      - "rabbitmq"
+    networks:
+      - networks_front
+      - networks_service
+    # command: "./wait-for.sh rabbitmq:5672 -- ./server"
+    command: "sleep 9999999"
+  rabbitmq:
+    image: rabbitmq:alpine
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - networks_service
+networks:
+  networks_front:
+    driver: overlay
+    attachable: true
+  networks_service:
+    driver: overlay
+    attachable: true
+  networks_db:
+    driver: overlay
+    attachable: true
+volumes:
+  dbdata:
+  logdata:
