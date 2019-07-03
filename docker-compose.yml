@@ -37,6 +37,33 @@ services:
         condition: on-failure
     networks:
       - networks_service
+  notification:
+    image: notification.message
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - networks_service
+      - networks_db
+    #command: "./wait-for.sh db:5432 -- ./wait-for.sh rabbitmq:5672 -- ./pool"
+    command: "sleep 9999999"
+  postgres:
+    image: postgres.message:latest
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=iforgot
+      - POSTGRES_MULTIPLE_DATABASES=notification
+    networks:
+      - networks_db
+    volumes:
+      - type: volume
+        source: dbdata
+        target: /var/lib/postgresql/data      
 networks:
   networks_front:
     driver: overlay

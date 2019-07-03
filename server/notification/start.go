@@ -56,7 +56,14 @@ func handler(delivery *amqp.Delivery) {
 		log.WithFields(log.Fields{"error": err}).Warn("[Notification] Decode payload failed.")
 		return
 	}
-	printPayload(&payload)
+	converter := notificationConverterMapping[payload.Address.IP.String()]
+	standardNotifications, err := converter.Convert(&payload)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Warn("[Notification] Handler notification failed, discard notification.")
+	}
+	for _, v := range standardNotifications {
+		v = v
+	}
 }
 
 func printPayload(payload *WrapedSnmpPacket) {
