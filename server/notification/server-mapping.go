@@ -4,8 +4,8 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/soniah/gosnmp"
-	"net"
-	"time"
+	notificationSDK "massive-message/notification/sdk"
+	receiverSDK "massive-message/receiver/sdk"
 )
 
 // SnmpVariable represents the variable in the snmp notification.
@@ -33,28 +33,9 @@ func (v SnmpVariable) String() string {
 	}
 }
 
-// WrapedSnmpPacket includes both the raw SNMP packet but also some other useful information for processing it later.
-// Since we are using encoding/gob, it's OK to use point here.
-type WrapedSnmpPacket struct {
-	Address    *net.UDPAddr
-	ReceivedAt time.Time
-	Variables  []SnmpVariable
-}
-
-// StandardNotification represents the standard notification will be save in the system.
-// Notification from the servers from all the vendors should be converted into this form.
-type StandardNotification struct {
-	Key         string
-	URL         string
-	Type        string
-	ReceivedAt  time.Time
-	Severity    string
-	Description string
-}
-
 // Converter represents the method that a converter should have.
 type Converter interface {
-	Convert(packet *WrapedSnmpPacket) ([]StandardNotification, error)
+	Convert(packet *receiverSDK.WrapedSnmpPacket) ([]notificationSDK.Notification, error)
 }
 
 // generateKey generates the standard notifications' key

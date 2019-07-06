@@ -7,12 +7,12 @@ import (
 	receiverSDK "massive-message/receiver/sdk"
 )
 
-// DellNotificationConverter is the converter for Dell's notification.
-type DellNotificationConverter struct {
+// IBMNotificationConverter is the converter for IBM's notification.
+type IBMNotificationConverter struct {
 }
 
 // Convert implements the NotificationConverter interface.
-func (DellNotificationConverter) Convert(packet *receiverSDK.WrapedSnmpPacket) ([]notificationSDK.Notification, error) {
+func (IBMNotificationConverter) Convert(packet *receiverSDK.WrapedSnmpPacket) ([]notificationSDK.Notification, error) {
 	var (
 		sn               string
 		originalKey      string
@@ -23,7 +23,7 @@ func (DellNotificationConverter) Convert(packet *receiverSDK.WrapedSnmpPacket) (
 	)
 
 	single := notificationSDK.Notification{}
-	// For Dell's notification, take the event number as the original key.
+	// For IBM's notification, take the event number as the original key.
 	for _, v := range packet.Variables {
 		switch v.Name {
 		case ".1.3.6.1.6.3.1.1.4.1.0.1":
@@ -41,12 +41,12 @@ func (DellNotificationConverter) Convert(packet *receiverSDK.WrapedSnmpPacket) (
 		}
 	}
 	if sn == "" || originalKey == "" || versusKey == "" || notificationType == "" || serverity == "" || description == "" {
-		log.WithFields(log.Fields{"vender": "Dell", "Address": packet.Address.IP.String()}).Error("[Server-Notification] Convert SNMP notification failed, drop this notification.")
+		log.WithFields(log.Fields{"vender": "IBM", "Address": packet.Address.IP.String()}).Error("[Server-Notification] Convert SNMP notification failed, drop this notification.")
 		return nil, fmt.Errorf("no original key")
 	}
 	single.URL = snURLMapping[sn]
-	single.Key = generateKey("Dell", originalKey)
-	single.VersusKey = generateKey("Dell", versusKey)
+	single.Key = generateKey("IBM", originalKey)
+	single.VersusKey = generateKey("IBM", versusKey)
 	single.GeneratedAt = packet.GeneratedAt
 	single.Type = notificationType
 	single.Severity = serverity

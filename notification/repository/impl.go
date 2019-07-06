@@ -13,7 +13,8 @@ import (
 var (
 	connection *gorm.DB
 	tables     = []TableInfo{
-		{Name: "Notification", Info: new(Notification)},
+		{Name: "Event", Info: new(Event)},
+		{Name: "Alert", Info: new(Alert)},
 	}
 )
 
@@ -23,32 +24,61 @@ type TableInfo struct {
 	Info interface{}
 }
 
-// Notification is the notification entity.
-type Notification struct {
+// Event is the represents the table for event objects.
+type Event struct {
 	ID          string    `gorm:"column:ID;primary_key"`
-	CreatedAt   time.Time `gorm:"column:CreatedAt"`
-	UpdatedAt   time.Time `gorm:"column:UpdatedAt"`
-	Key         string
-	VersusKey   string
-	URL         string
-	Type        string
-	ReceivedAt  time.Time
-	Severity    string
-	Description string
+	Key         string    `gorm:"column:Key;index"`
+	URL         string    `gorm:"column:URL;index"`
+	VersusKey   string    `gorm:"column:VersusKey"`
+	Type        string    `gorm:"column:Type"`
+	GeneratedAt time.Time `gorm:"column:GeneratedAt"`
+	Severity    string    `gorm:"column:Severity"`
+	Description string    `gorm:"column:Description"`
 }
 
 // TableName will set the table name.
-func (Notification) TableName() string {
-	return "Notification"
+func (Event) TableName() string {
+	return "Event"
 }
 
-func newEntity(o *sdk.Notification) *Notification {
-	ret := Notification{}
+// Alert is the represents the table for alert objects.
+type Alert struct {
+	ID          string    `gorm:"column:ID;primary_key"`
+	Key         string    `gorm:"column:Key;index"`
+	URL         string    `gorm:"column:URL;index"`
+	VersusKey   string    `gorm:"column:VersusKey"`
+	Type        string    `gorm:"column:Type"`
+	GeneratedAt time.Time `gorm:"column:GeneratedAt"`
+	Severity    string    `gorm:"column:Severity"`
+	Description string    `gorm:"column:Description"`
+}
+
+// TableName will set the table name.
+func (Alert) TableName() string {
+	return "Alert"
+}
+
+func newAlert(o *sdk.Notification) *Alert {
+	ret := Alert{}
 	ret.ID = uuid.New().String()
 	ret.Key = o.Key
+	ret.VersusKey = o.VersusKey
 	ret.URL = o.URL
 	ret.Type = o.Type
-	ret.ReceivedAt = o.ReceivedAt
+	ret.GeneratedAt = o.GeneratedAt
+	ret.Severity = o.Severity
+	ret.Description = o.Description
+	return &ret
+}
+
+func newEvent(o *sdk.Notification) *Event {
+	ret := Event{}
+	ret.ID = uuid.New().String()
+	ret.Key = o.Key
+	ret.VersusKey = o.VersusKey
+	ret.URL = o.URL
+	ret.Type = o.Type
+	ret.GeneratedAt = o.GeneratedAt
 	ret.Severity = o.Severity
 	ret.Description = o.Description
 	return &ret
@@ -56,28 +86,28 @@ func newEntity(o *sdk.Notification) *Notification {
 
 // Init perform the initialization work.
 func Init() error {
+	var err error
 	if connection == nil {
-		log.Info("[Event] Init DB connection.")
+		log.Info("[Notification-Repository] Init DB connection.")
 		args := fmt.Sprintf("host=postgres port=5432 user=postgres dbname=notification sslmode=disable password=iforgot")
-		db, err := gorm.Open("postgres", args)
+		connection, err = gorm.Open("postgres", args)
 		if err != nil {
-			log.WithFields(log.Fields{"error": err}).Error("[Event] DB open failed.")
+			log.WithFields(log.Fields{"error": err}).Error("[Notification-Repository] DB open failed.")
 			return err
 		}
-		// db.LogMode(true)
-		db.SingularTable(true)
-		connection = db
+		// connection.LogMode(true)
+		connection.SingularTable(true)
 	} else {
-		log.Info("[Event] DB connection exist.")
+		log.Info("[Notification-Repository] DB connection exist.")
 	}
 	return nil
 }
 
 // CreateTables creates the tables.
 func CreateTables() error {
-	for i := range tables {
-		if err := connection.CreateTable(tables[i].Info).Error; err != nil {
-			log.WithFields(log.Fields{"Table": tables[i].Name, "error": err}).Error("[Event] create table failed.")
+	for _, v := range tables {
+		if err := connection.CreateTable(v.Info).Error; err != nil {
+			log.WithFields(log.Fields{"Table": v.Name, "error": err}).Error("[Notification-Repository] create table failed.")
 			return err
 		}
 	}
@@ -86,32 +116,26 @@ func CreateTables() error {
 
 // DropTablesIfExist drops tables if they are exist.
 func DropTablesIfExist() error {
-	for i := range tables {
-		if err := connection.DropTableIfExists(tables[i].Info).Error; err != nil {
-			log.WithFields(log.Fields{"Table": tables[i].Name, "error": err}).Error("[Event] remove table failed.")
-			return err
+	for _, v := range tables {
+		if err := connection.DropTableIfExists(v.Info).Error; err != nil {
+			log.WithFields(log.Fields{"Table": v.Name, "error": err}).Error("[Notification-Repository] remove table failed.")
+			// return err
 		}
 	}
 	return nil
 }
 
-// ProcessNotification will first save this notification.
-// If this notification is a alert, it will try to remove the versus notification.
-// To find out the versus one, it will search by using the URL and Key.
-//
-func ProcessNotification(o *sdk.Notification) error {
-	entity := newEntity(o)
+// SaveNotification saves the notification into the database.
+func SaveNotification(o *sdk.Notification) error {
+	var entity interface{}
+	if o.Type == "Alert" {
+		entity = newAlert(o)
+	} else {
+		entity = newEvent(o)
+	}
 	if err := connection.Create(entity).Error; err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("[Event] Save event failed.")
+		log.WithFields(log.Fields{"error": err}).Error("[Notification-Repository] Save notification failed.")
 		return err
 	}
-	if entity.Type != "Alert" {
-		return nil
-	}
-	record := Notification{}
-	if connection.Where("\"URL\" = ? and \"VersusKey\" = ?", entity.URL, entity.VersusKey).First(&record).RecordNotFound() {
-		return nil
-	}
-
 	return nil
 }
