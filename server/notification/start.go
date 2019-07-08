@@ -24,7 +24,10 @@ func subscribe(topices []string, handler func(d *amqp.Delivery)) error {
 		log.Warn("[Server-Notification] Subscribe event failed, no channel, forgot to init event service?")
 		return fmt.Errorf("no channel")
 	}
-	q, err := channel.QueueDeclare("", true, false, false, false, nil)
+
+	q, err := channel.QueueDeclare(
+		fmt.Sprintf("%s to server", receiverSDK.TrapExchangeName),
+		true, false, false, false, nil)
 	if err != nil {
 		log.WithFields(log.Fields{"topic": topices, "error": err}).Warn("[Server-Notification] Subscribe event failed, declare queue failed.")
 		return err

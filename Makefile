@@ -19,6 +19,7 @@ image:
 	$(MAKE) -C server image
 	$(MAKE) -C notification image
 	$(MAKE) -C postgres image
+	$(MAKE) -C rabbitmq image
 
 deploy:
 	docker stack deploy -c docker-compose.yml message

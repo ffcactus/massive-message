@@ -95,7 +95,7 @@ func Init() error {
 			log.WithFields(log.Fields{"error": err}).Error("[Notification-Repository] DB open failed.")
 			return err
 		}
-		// connection.LogMode(true)
+		connection.LogMode(true)
 		connection.SingularTable(true)
 	} else {
 		log.Info("[Notification-Repository] DB connection exist.")
@@ -138,4 +138,33 @@ func SaveNotification(o *sdk.Notification) error {
 		return err
 	}
 	return nil
+}
+
+type urlResult struct {
+	URL string
+}
+
+// GetTargetsHaveAlert returns all the targets that have alerts.
+// On error, return nil.
+func GetTargetsHaveAlert() ([]string, error) {
+	sqlResult := []Alert{}
+	if err := connection.Select("DISTINCT(\"URL\")").Find(&sqlResult).Error; err != nil {
+		log.WithFields(log.Fields{"error": err}).Warn("[Notification-Repository] Get targets that having alerts failed.")
+		return nil, err
+	}
+	ret := []string{}
+	for _, v := range sqlResult {
+		ret = append(ret, v.URL)
+	}
+	return ret, nil
+}
+
+// GetAlertsByURL returns the alerts that matchs the url.
+func GetAlertsByURL(url string) ([]Alert, error) {
+	result := []Alert{}
+	if err := connection.Where("\"URL\" = ?", url).Find(&result).Error; err != nil {
+		log.WithFields(log.Fields{"url": url, "error": err}).Warn("[Notification-Repository] Get alerts by URL failed.")
+		return nil, err
+	}
+	return result, nil
 }

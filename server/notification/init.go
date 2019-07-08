@@ -48,25 +48,17 @@ func generateConverterMapping() {
 		sn := fmt.Sprintf("sn-huawei-%d", i)
 		notificationConverterMapping[sn] = huaweiNotificationConverter
 		snURLMapping[sn] = "/redfish/v1/servers/" + uuid.New().String()
-	}
-	for i := 10000; i < 20000; i++ {
-		sn := fmt.Sprintf("sn-huawei-%d", i)
+		sn = fmt.Sprintf("sn-hpe-%d", i)
 		notificationConverterMapping[sn] = dellNotificationConverter
 		snURLMapping[sn] = "/redfish/v1/servers/" + uuid.New().String()
-	}
-	for i := 20000; i < 30000; i++ {
-		sn := fmt.Sprintf("sn-huawei-%d", i)
-		notificationConverterMapping[sn] = hpeNotificationConverter
+		sn = fmt.Sprintf("sn-dell-%d", i)
+		notificationConverterMapping[sn] = dellNotificationConverter
 		snURLMapping[sn] = "/redfish/v1/servers/" + uuid.New().String()
-	}
-	for i := 30000; i < 40000; i++ {
-		sn := fmt.Sprintf("sn-huawei-%d", i)
-		notificationConverterMapping[sn] = ibmNotificationConverter
+		sn = fmt.Sprintf("sn-ibm-%d", i)
+		notificationConverterMapping[sn] = dellNotificationConverter
 		snURLMapping[sn] = "/redfish/v1/servers/" + uuid.New().String()
-	}
-	for i := 40000; i < 50000; i++ {
-		sn := fmt.Sprintf("sn-huawei-%d", i)
-		notificationConverterMapping[sn] = lenovoNotificationConverter
+		sn = fmt.Sprintf("sn-lenovo-%d", i)
+		notificationConverterMapping[sn] = dellNotificationConverter
 		snURLMapping[sn] = "/redfish/v1/servers/" + uuid.New().String()
 	}
 }

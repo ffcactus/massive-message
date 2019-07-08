@@ -35,6 +35,8 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+    ports:
+      - "15672:15672"
     networks:
       - networks_service
   notification:
@@ -63,7 +65,7 @@ services:
     volumes:
       - type: volume
         source: dbdata
-        target: /var/lib/postgresql/data      
+        target: /var/lib/postgresql/data
 networks:
   networks_front:
     driver: overlay

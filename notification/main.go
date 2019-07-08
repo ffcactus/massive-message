@@ -32,5 +32,6 @@ func main() {
 	log.Info("[Notification] Initialize message queue done.")
 	defer messageService.Release()
 
+	go messageService.StartStateTracker()
 	messageService.Start()
 }
