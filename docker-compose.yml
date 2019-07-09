@@ -27,6 +27,7 @@ services:
     networks:
       - networks_front
       - networks_service
+      - networks_db
     # command: "./wait-for.sh rabbitmq:5672 -- ./server"
     command: "sleep 9999999"
   rabbitmq:
@@ -59,7 +60,7 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=iforgot
-      - POSTGRES_MULTIPLE_DATABASES=notification
+      - POSTGRES_MULTIPLE_DATABASES=notification,server
     networks:
       - networks_db
     volumes:

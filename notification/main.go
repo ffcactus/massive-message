@@ -25,13 +25,13 @@ func main() {
 		os.Exit(-1)
 	}
 	log.Info("[Notification] Create tables done.")
-	if err := messageService.Init(); err != nil {
+
+	if err := messageService.InitConnection(); err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("[Notification] Init message receiver failed.")
 		os.Exit(-1)
 	}
-	log.Info("[Notification] Initialize message queue done.")
-	defer messageService.Release()
+	defer messageService.CloseConnection()
 
-	go messageService.StartStateTracker()
+	go messageService.StartHealthTracker()
 	messageService.Start()
 }

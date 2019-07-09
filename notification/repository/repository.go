@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"container/list"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
@@ -95,7 +96,7 @@ func Init() error {
 			log.WithFields(log.Fields{"error": err}).Error("[Notification-Repository] DB open failed.")
 			return err
 		}
-		connection.LogMode(true)
+		// connection.LogMode(true)
 		connection.SingularTable(true)
 	} else {
 		log.Info("[Notification-Repository] DB connection exist.")
@@ -119,7 +120,7 @@ func DropTablesIfExist() error {
 	for _, v := range tables {
 		if err := connection.DropTableIfExists(v.Info).Error; err != nil {
 			log.WithFields(log.Fields{"Table": v.Name, "error": err}).Error("[Notification-Repository] remove table failed.")
-			// return err
+			return err
 		}
 	}
 	return nil
@@ -140,10 +141,6 @@ func SaveNotification(o *sdk.Notification) error {
 	return nil
 }
 
-type urlResult struct {
-	URL string
-}
-
 // GetTargetsHaveAlert returns all the targets that have alerts.
 // On error, return nil.
 func GetTargetsHaveAlert() ([]string, error) {
@@ -159,12 +156,62 @@ func GetTargetsHaveAlert() ([]string, error) {
 	return ret, nil
 }
 
-// GetAlertsByURL returns the alerts that matchs the url.
-func GetAlertsByURL(url string) ([]Alert, error) {
-	result := []Alert{}
-	if err := connection.Where("\"URL\" = ?", url).Find(&result).Error; err != nil {
-		log.WithFields(log.Fields{"url": url, "error": err}).Warn("[Notification-Repository] Get alerts by URL failed.")
+// CombineAlertsByURL finds all the alerts that matches the url, and remove the ones that can be removed.
+// The ones that can be removed can be found like this:
+// 1. Sorts the alerts by GeratedAt.
+// 2. Literates the sorted alerts, from the head,
+func CombineAlertsByURL(url string) (*sdk.HealthChangeNotification, error) {
+	alerts := []Alert{}
+	if err := connection.Order("\"GeneratedAt\" asc").Where("\"URL\" = ?", url).Find(&alerts).Error; err != nil {
+		log.WithFields(log.Fields{"url": url, "error": err}).Warn("[Notification-Repository] Combine alerts failed, get alerts by URL failed.")
 		return nil, err
 	}
-	return result, nil
+
+	removeFromDB := []Alert{}
+	// Save the record to the list for fast remove operation.
+	l := list.New()
+	for _, alert := range alerts {
+		l.PushBack(alert)
+	}
+
+	// Pick up a element from the head. Literates to the end and remove the elements that the Key matahes key or Key matches VersusKey.
+	for e := l.Front(); e != nil; e = e.Next() {
+		alert := e.Value.(Alert)
+		removeFromList := []*list.Element{}
+		for r := e.Next(); r != nil; r = r.Next() {
+			check := r.Value.(Alert)
+			if check.Key == alert.VersusKey {
+				removeFromList = append(removeFromList, r)
+				removeFromDB = append(removeFromDB, check)
+				continue
+			}
+			if check.Key == alert.Key {
+				removeFromList = append(removeFromList, r)
+				removeFromDB = append(removeFromDB, check)
+				continue
+			}
+		}
+		for _, toRemove := range removeFromList {
+			l.Remove(toRemove)
+		}
+	}
+
+	// Remove the records from DB.
+	for _, toRemove := range removeFromDB {
+		// Ignore errors here.
+		// Errors may raise here, for example, another routine is doing the same work.
+		// However, it seems OK. (Someone please help me to prove it)
+		connection.Unscoped().Delete(&toRemove)
+	}
+	notification := sdk.HealthChangeNotification{}
+	notification.URL = url
+	for e := l.Front(); e != nil; e = e.Next() {
+		alert := e.Value.(Alert)
+		if alert.Severity == "Warning" {
+			notification.Warnings++
+		} else if alert.Severity == "Critical" {
+			notification.Criticals++
+		}
+	}
+	return &notification, nil
 }

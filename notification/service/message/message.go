@@ -16,22 +16,9 @@ var (
 	channel    *amqp.Channel
 )
 
-// Init creates the exchange and queue for receiving notification message.
-func Init() error {
-	return initMessageQueue()
-}
-
-// Release the resources used in this service.
-func Release() {
-	if channel != nil {
-		channel.Close()
-	}
-	if connection != nil {
-		connection.Close()
-	}
-}
-
-func initMessageQueue() error {
+// InitConnection initialize the connection and channel that is used for message process.
+// ReleaseConnection should be used later.
+func InitConnection() error {
 	var err error
 	connection, err = amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
 	if err != nil {
@@ -46,24 +33,28 @@ func initMessageQueue() error {
 		return err
 	}
 
-	if err := channel.ExchangeDeclare(
-		sdk.NotificationExchangeName, // name
-		"topic", // type
-		true,    // duarable
-		false,   // auto-deleted
-		false,   // internal,
-		false,   // no-wait,
-		nil,     // args
-	); err != nil {
-		log.WithFields(log.Fields{"err": err}).Error("[Notification-Service] Init MQ service failed, create exchange failed.")
-	}
 	log.WithFields(log.Fields{"exchange": sdk.NotificationExchangeName, "type": "topic"}).Info("[Notification-Service] MQ service initialized.")
 	return nil
+}
+
+// CloseConnection closes the connection and channel.
+func CloseConnection() {
+	if channel != nil {
+		channel.Close()
+	}
+	if connection != nil {
+		connection.Close()
+	}
 }
 
 // Start the notification process.
 // This function won't return.
 func Start() {
+	// args: exchange, type, durable, auto-deleted, internal, no-wait, args
+	if err := channel.ExchangeDeclare(sdk.NotificationExchangeName, "topic", true, false, false, false, nil); err != nil {
+		log.WithFields(log.Fields{"err": err}).Error("[Notification-Service] Start notification process failed, declare exchange failed.")
+		return
+	}
 	subscribe([]string{"*.*"}, handler)
 }
 
