@@ -1,10 +1,9 @@
 package controller
 
 import (
-	"encoding/json"
 	"github.com/astaxie/beego"
 	log "github.com/sirupsen/logrus"
-	"massive-message/service/service"
+	"massive-message/server/repository"
 	"net/http"
 	"strconv"
 )
@@ -17,9 +16,9 @@ type Server struct {
 // GetServers retrieve and filter servers. Note that only certain properties can be used as filter key.
 func (c *Server) GetServers() {
 	var (
-		start, count, filter string = c.GetString("start"), c.GetString("count"), c.GetString("orderby")
-		startInt, countInt   int64  = 0, -1
-		parameterError       bool
+		start, count, orderby string = c.GetString("start"), c.GetString("count"), c.GetString("orderby")
+		startInt, countInt    int64  = 0, -1
+		parameterError        bool
 	)
 	if start != "" {
 		_startInt, err := strconv.ParseInt(start, 10, 64)
@@ -41,21 +40,43 @@ func (c *Server) GetServers() {
 
 	if parameterError {
 		log.Warn("[Server-Controller] Get servers failed, parameter error.")
-		c.Data["json"] = &errorResps
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.ServeJSON()
 		return
 	}
-
-	collection, err := service.GetServers(startInt, countInt, orderby)
+	log.WithFields(log.Fields{"start": start, "count": count, "orderby": orderby}).Debug("[Server-Controller] Get servers.")
+	servers, err := repository.GetServers(startInt, countInt, orderby)
 	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Warn("[Server-Controller] Get servers failed, service operation failed.")
+		log.WithFields(log.Fields{"err": err}).Warn("[Server-Controller] Get servers failed, repository operation failed.")
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.ServeJSON()
 		return
 	}
 
-	c.Data["json"] = collection.DTO()
+	c.Data["json"] = servers
+	c.Ctx.Output.SetStatus(http.StatusOK)
+	c.ServeJSON()
+}
+
+// GetServerByID handle the request that retrieve a server by it's ID.
+func (c *Server) GetServerByID() {
+	var (
+		id = c.Ctx.Input.Param(":id")
+	)
+
+	server, err := repository.GetServerByID(id)
+	if err != nil {
+		log.WithFields(log.Fields{"id": id, "err": err}).Warn("[Controller] Get server by ID failed. repository operation failed.")
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
+		c.ServeJSON()
+		return
+	}
+	if server == nil {
+		c.Ctx.Output.SetStatus(http.StatusNotFound)
+		c.ServeJSON()
+		return
+	}
+	c.Data["json"] = server
 	c.Ctx.Output.SetStatus(http.StatusOK)
 	c.ServeJSON()
 }

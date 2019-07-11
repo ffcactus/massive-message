@@ -7,17 +7,12 @@ import (
 
 // Server represents the server table in DB.
 type Server struct {
-	ID           string `gorm:"column:ID;primary_key"`
-	URL          string `gorm:"column:URL"`
-	Name         string `gorm:"column:Name"`
-	SerialNumber string `gorm:"column:SerialNumber"`
-	Warnings     int    `gorm:"column:Warnings"`
-	Criticals    int    `gorm:"column:Criticals"`
-}
-
-// TableName will set the table name.
-func (Server) TableName() string {
-	return "Server"
+	ID           string `gorm:"primary_key"`
+	URL          string
+	Name         string `gorm:"index"`
+	SerialNumber string
+	Warnings     int `gorm:"index"`
+	Criticals    int `gorm:"index"`
 }
 
 func newServer(o *sdk.Server) *Server {

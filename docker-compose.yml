@@ -1,6 +1,20 @@
 version: "3.2"
 
 services:
+  httpd:
+    image: httpd.message:latest
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      restart_policy:
+        condition: on-failure
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - networks_front
+      - networks_service
   receiver:
     image: receiver.message:latest
     deploy:

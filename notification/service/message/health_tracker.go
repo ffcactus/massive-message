@@ -21,6 +21,20 @@ const (
 
 // StartHealthTracker should be used as a co-routing. For each of the url, it finds out all effective alerts and broadcast this information.
 func StartHealthTracker() {
+	connection, err := amqp.Dial("amqp://guest:guest@rabbitmq:5672/")
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Error("[Notification-Service] Init MQ service failed, dail failed.")
+		return
+	}
+	defer connection.Close()
+	channel, err := connection.Channel()
+	if err != nil {
+		log.WithFields(log.Fields{"err": err}).Error("[Notification-Service] Init MQ service failed, create channel failed.")
+		connection.Close()
+		return
+	}
+	defer channel.Close()
+
 	// args: exchange, type, durable, auto-deleted, internal, no-wait, args
 	if err := channel.ExchangeDeclare(sdk.HealthChangeExchangeName, "topic", true, false, false, false, nil); err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("[Notification-Service] Start health tracker failed, create exchange failed.")
@@ -40,13 +54,17 @@ func StartHealthTracker() {
 				log.WithFields(log.Fields{"url": url, "error": err}).Warn("[Notification-Service] Tracker health change for URL failed, combine alerts failed.")
 				continue
 			}
-			sendHealthChangeNotification(notification)
+			if changed, _ := repository.CheckAndUpdateURLHealth(notification); changed {
+				log.WithFields(log.Fields{"url": url}).Info("[Notification-Service] Tracker health change for URL found changes.")
+				sendHealthChangeNotification(channel, notification)
+			}
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
 // find out the current health from the alerts.
-func sendHealthChangeNotification(notification *sdk.HealthChangeNotification) {
+func sendHealthChangeNotification(channel *amqp.Channel, notification *sdk.HealthChangeNotification) {
 	network := bytes.Buffer{}
 	encoder := gob.NewEncoder(&network)
 
@@ -55,7 +73,7 @@ func sendHealthChangeNotification(notification *sdk.HealthChangeNotification) {
 		return
 	}
 	if err := channel.Publish(sdk.HealthChangeExchangeName, "HealthChange.New", false, false, amqp.Publishing{
-		ContentType: "text/plain",
+		ContentType: "application/octet-stream",
 		Body:        network.Bytes(),
 	}); err != nil {
 		log.WithFields(log.Fields{"err": err}).Warn("[Server-Service] Publish health change notification message failed.")

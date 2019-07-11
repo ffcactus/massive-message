@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	log "github.com/sirupsen/logrus"
@@ -86,10 +85,10 @@ func SaveServer(entity *Server) error {
 func UpdateServerHealth(id string, warnings, criticals int) error {
 	var entity Server
 	entity.ID = id
-	if err := connection.Model(&entity).Where("\"ID\" = ?", id).Updates(
-		Server{
-			Warnings:  warnings,
-			Criticals: criticals,
+	if err := connection.Model(&entity).Where("id = ?", id).Updates(
+		map[string]interface{}{
+			"warnings":  warnings,
+			"criticals": criticals,
 		}).Error; err != nil {
 		log.WithFields(log.Fields{"id": id, "error": err}).Error("[Server-Repository] Update server health failed.")
 		return err
@@ -97,15 +96,15 @@ func UpdateServerHealth(id string, warnings, criticals int) error {
 	return nil
 }
 
-// GetServerCollection return a server collection specified by start, count and orderby.
-func GetServerCollection(start, count int64, orderby string) (*sdk.ServerCollection, error) {
+// GetServers return a server collection specified by start, count and orderby.
+func GetServers(start, count int64, orderby string) (*sdk.ServerCollection, error) {
 	var err error
 
 	servers := []Server{}
 	if orderby == "Name" {
-		err = connection.Limit(count).Offset(start).Order("\"Name\"").Find(&servers).Error
+		err = connection.Limit(count).Offset(start).Order("name").Find(&servers).Error
 	} else {
-		err = connection.Limit(count).Offset(start).Order("\"Criticals\"").Order("\"Warnings\"").Find(&servers).Error
+		err = connection.Limit(count).Offset(start).Order("criticals").Order("warnings").Find(&servers).Error
 	}
 
 	if err != nil {
@@ -124,48 +123,79 @@ func GetServerCollection(start, count int64, orderby string) (*sdk.ServerCollect
 		})
 	}
 	return &ret, nil
+}
 
+// GetServerByID gets server by ID, if server does not exsit return nil, nil.
+func GetServerByID(id string) (*sdk.Server, error) {
+	var (
+		record Server
+	)
+
+	// Here we try to find the SSG before preload all the values, hoping this would be faster.
+	notFound := connection.Where("id = ?", id).First(&record).RecordNotFound()
+	if err := connection.Error; err != nil {
+		log.WithFields(log.Fields{"id": id}).Warn("[Server-Repository] Get server by ID failed, find first record failed.")
+		return nil, err
+	}
+	if notFound {
+		log.WithFields(log.Fields{"id": id}).Warn("[Server-Repository] Get server by ID failed, server does not exist.")
+		return nil, nil
+	}
+	ret := sdk.Server{
+		ID:           record.ID,
+		URL:          record.URL,
+		Name:         record.Name,
+		SerialNumber: record.SerialNumber,
+		Warnings:     record.Warnings,
+		Criticals:    record.Criticals,
+	}
+	return &ret, nil
 }
 
 func prepareMockServers() {
 	for i := 0; i < 10000; i++ {
+		sn := fmt.Sprintf("sn-huawei-%d", i)
 		server := Server{}
-		server.Name = fmt.Sprintf("Huawei Server %d", i)
-		server.ID = uuid.New().String()
-		server.URL = "/api/v1/servers/" + server.ID
-		server.SerialNumber = fmt.Sprintf("sn-huawei-%d", i)
+		server.Name = fmt.Sprintf("Huawei Server %05d", i)
+		server.ID = sn
+		server.URL = "/api/v1/servers/" + sn
+		server.SerialNumber = sn
 		SaveServer(&server)
 	}
 	for i := 0; i < 10000; i++ {
+		sn := fmt.Sprintf("sn-hpe-%d", i)
 		server := Server{}
-		server.Name = fmt.Sprintf("HPE Server %d", i)
-		server.ID = uuid.New().String()
-		server.URL = "/api/v1/servers/" + server.ID
-		server.SerialNumber = fmt.Sprintf("sn-hpe-%d", i)
+		server.Name = fmt.Sprintf("HPE Server %05d", i)
+		server.ID = sn
+		server.URL = "/api/v1/servers/" + sn
+		server.SerialNumber = sn
 		SaveServer(&server)
 	}
 	for i := 0; i < 10000; i++ {
+		sn := fmt.Sprintf("sn-dell-%d", i)
 		server := Server{}
-		server.Name = fmt.Sprintf("Dell Server %d", i)
-		server.ID = uuid.New().String()
-		server.URL = "/api/v1/servers/" + server.ID
-		server.SerialNumber = fmt.Sprintf("sn-dell-%d", i)
+		server.Name = fmt.Sprintf("Dell Server %05d", i)
+		server.ID = sn
+		server.URL = "/api/v1/servers/" + sn
+		server.SerialNumber = sn
 		SaveServer(&server)
 	}
 	for i := 0; i < 10000; i++ {
+		sn := fmt.Sprintf("sn-ibm-%d", i)
 		server := Server{}
-		server.Name = fmt.Sprintf("IBM Server %d", i)
-		server.ID = uuid.New().String()
-		server.URL = "/api/v1/servers/" + server.ID
-		server.SerialNumber = fmt.Sprintf("sn-ibm-%d", i)
+		server.Name = fmt.Sprintf("IBM Server %05d", i)
+		server.ID = sn
+		server.URL = "/api/v1/servers/" + sn
+		server.SerialNumber = sn
 		SaveServer(&server)
 	}
 	for i := 0; i < 10000; i++ {
+		sn := fmt.Sprintf("sn-lenovo-%d", i)
 		server := Server{}
-		server.Name = fmt.Sprintf("Lenovo Server %d", i)
-		server.ID = uuid.New().String()
-		server.URL = "/api/v1/servers/" + server.ID
-		server.SerialNumber = fmt.Sprintf("sn-lenovo-%d", i)
+		server.Name = fmt.Sprintf("Lenovo Server %05d", i)
+		server.ID = sn
+		server.URL = "/api/v1/servers/" + sn
+		server.SerialNumber = sn
 		SaveServer(&server)
 	}
 }

@@ -1,0 +1,57 @@
+.App {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  display: flex;
+  flex-direction: column;
+  background-color: whitesmoke;
+}
+
+.Pages {
+  min-height: 2em;
+  background-color: whitesmoke;
+  display: flex;
+  flex-direction: row;
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: auto;
+  justify-content: center;
+}
+
+.PageIndex {
+  padding: 0px 5px;
+  cursor: pointer;
+}
+
+.ServerList {
+  height: 100%;
+  overflow: auto;
+}
+
+.Server {
+  display: flex;
+  flex-direction: row;
+  flex-grow: auto;
+  flex-shrink: 1;
+  flex-basis: auto;
+  border: 1px lightblue solid;
+}
+
+.ServerName {
+  padding: 0 30px;
+  width: 200px;
+}
+
+.ServerCriticals {
+  padding: 0 10px;
+  color: red;
+  width: 20px;
+}
+
+.ServerWarnings {
+  padding: 0 10px;
+  color: orange;
+  width: 20px;
+}

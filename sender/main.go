@@ -6,6 +6,7 @@ import (
 	"github.com/soniah/gosnmp"
 	"log"
 	"massive-message/sender/plan1"
+	"massive-message/sender/plan2"
 	"os"
 	"strconv"
 	"strings"
@@ -50,9 +51,21 @@ func main() {
 			}
 			serverPerVendor, _ := strconv.ParseInt(plan[1], 10, 32)
 			eventPerServer, _ := strconv.ParseInt(plan[2], 10, 32)
-			interval, _ := strconv.ParseInt(plan[2], 10, 32)
+			interval, _ := strconv.ParseInt(plan[3], 10, 32)
 			fmt.Printf("Using plan1 with serverPerVendor %d, eventPerServe %d, interval %d\n", int(serverPerVendor), int(eventPerServer), int(interval))
 			plan1.Do(gosnmp.Default, int(serverPerVendor), int(eventPerServer), int(interval))
+			return
+		case "plan2":
+			if len(plan) != 6 {
+				fmt.Println("Use plan2 with format plan2,vendor,serverCount,severity,alertCount,interval")
+				os.Exit(-1)
+			}
+			vendor := plan[1]
+			serverCount, _ := strconv.ParseInt(plan[2], 10, 32)
+			severity := plan[3]
+			alertCount, _ := strconv.ParseInt(plan[4], 10, 32)
+			interval, _ := strconv.ParseInt(plan[5], 10, 32)
+			plan2.Do(gosnmp.Default, vendor, int(serverCount), severity, int(alertCount), int(interval))
 			return
 		}
 	}

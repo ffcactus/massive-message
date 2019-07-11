@@ -7,6 +7,6 @@ clean:
 
 image: all
 	mv ./notification ./build/image/fs/
-	docker build -t notification.message ./build/image
+	docker build -t notification.message:latest ./build/image
 
 .PHONY: all clean image

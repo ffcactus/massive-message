@@ -7,6 +7,6 @@ clean:
 
 image: all
 	mv ./server ./build/image/fs/
-	docker build -t server.message ./build/image
+	docker build -t server.message:latest ./build/image
 
 .PHONY: all clean image

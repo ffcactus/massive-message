@@ -87,7 +87,7 @@ func handler(delivery *amqp.Delivery) {
 			return
 		}
 		if err := channel.Publish(notificationSDK.NotificationExchangeName, "Notification.New", false, false, amqp.Publishing{
-			ContentType: "text/plain",
+			ContentType: "application/octet-stream",
 			Body:        network.Bytes(),
 		}); err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("[Server-Notification] Publish notification message failed.")

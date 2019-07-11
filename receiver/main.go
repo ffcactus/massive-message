@@ -80,7 +80,7 @@ func handler(packet *gosnmp.SnmpPacket, addr *net.UDPAddr) {
 		return
 	}
 	if err := channel.Publish(sdk.TrapExchangeName, "Trap.New", false, false, amqp.Publishing{
-		ContentType: "text/plain",
+		ContentType: "application/octet-stream",
 		Body:        network.Bytes(),
 	}); err != nil {
 		log.WithFields(log.Fields{"err": err}).Error("[Receiver] Publish SNMP trap message failed.")

@@ -7,6 +7,6 @@ clean:
 
 image: all
 	mv ./receiver ./build/image/fs/
-	docker build -t receiver.message ./build/image
+	docker build -t receiver.message:latest ./build/image
 
 .PHONY: all clean image
