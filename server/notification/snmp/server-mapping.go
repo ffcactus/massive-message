@@ -1,4 +1,4 @@
-package notification
+package snmp
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 )
 
 // SnmpVariable represents the variable in the snmp notification.
-type SnmpVariable struct {
+type Variable struct {
 	// Name is an oid in string format eg ".1.3.6.1.4.9.27"
 	Name string
 	// The type of the value eg Integer
@@ -19,7 +19,7 @@ type SnmpVariable struct {
 	Value interface{}
 }
 
-func (v SnmpVariable) String() string {
+func (v Variable) String() string {
 	switch v.Type {
 	case gosnmp.OctetString:
 		return string(v.Value.([]byte))

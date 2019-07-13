@@ -73,6 +73,7 @@ func sendHealthChangeNotification(channel *amqp.Channel, notification *sdk.Healt
 		return
 	}
 	if err := channel.Publish(sdk.HealthChangeExchangeName, "HealthChange.New", false, false, amqp.Publishing{
+		DeliveryMode: amqp.Persistent,
 		ContentType: "application/octet-stream",
 		Body:        network.Bytes(),
 	}); err != nil {

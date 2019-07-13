@@ -83,12 +83,12 @@ func SaveNotification(o *sdk.Notification) error {
 // GetTargetsHaveAlert returns all the targets that have alerts.
 // On error, return nil.
 func GetTargetsHaveAlert() ([]string, error) {
-	sqlResult := []Alert{}
+	var sqlResult []Alert
 	if err := connection.Select("DISTINCT(url)").Find(&sqlResult).Error; err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("[Notification-Repository] Get targets that having alerts failed.")
 		return nil, err
 	}
-	ret := []string{}
+	var ret []string
 	for _, v := range sqlResult {
 		ret = append(ret, v.URL)
 	}
@@ -97,15 +97,15 @@ func GetTargetsHaveAlert() ([]string, error) {
 
 // CombineAlertsByURL finds all the alerts that matches the url, and remove the ones that can be removed.
 // The ones that can be removed can be found like this:
-// 1. Sorts the alerts by GeratedAt.
+// 1. Sorts the alerts by GeneratedAt.
 // 2. Literates the sorted alerts, from the head,
 func CombineAlertsByURL(url string) (*sdk.HealthChangeNotification, error) {
-	alerts := []Alert{}
+	var alerts []Alert
 	if err := connection.Order("generated_at desc").Where("url = ?", url).Find(&alerts).Error; err != nil {
 		log.WithFields(log.Fields{"url": url, "error": err}).Warn("[Notification-Repository] Combine alerts failed, get alerts by URL failed.")
 		return nil, err
 	}
-	removeFromDB := []Alert{}
+	var removeFromDB []Alert
 	// Save the record to the list for fast remove operation.
 	l := list.New()
 	for _, alert := range alerts {
@@ -120,7 +120,7 @@ func CombineAlertsByURL(url string) (*sdk.HealthChangeNotification, error) {
 			removeFromDB = append(removeFromDB, alert)
 		}
 
-		removeFromList := []*list.Element{}
+		var removeFromList []*list.Element
 		for r := e.Next(); r != nil; r = r.Next() {
 			check := r.Value.(Alert)
 			if check.Key == alert.VersusKey {

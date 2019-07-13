@@ -3,24 +3,21 @@ package main
 import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/plugins/cors"
-	log "github.com/sirupsen/logrus"
 	"massive-message/server/controller"
-	"massive-message/server/notification"
 	"massive-message/server/notification/healthchange"
+	"massive-message/server/notification/snmp"
 	"massive-message/server/repository"
 	"os"
 )
 
 func main() {
-	repository.Init()
-	err := notification.Init()
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Error("[Server] Init MQ service failed.")
+	if err := repository.Init(); err != nil {
 		os.Exit(-1)
 	}
-	defer notification.Release()
+	snmp.Init()
+
 	go healthchange.Start()
-	go notification.Start()
+	go snmp.Listen()
 
 	serverController := controller.Server{}
 	serverNS := beego.NewNamespace(

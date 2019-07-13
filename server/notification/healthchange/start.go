@@ -64,6 +64,7 @@ func Start() {
 	log.WithFields(log.Fields{"Name": q.Name}).Info("[Server-HealthChange] Start message process, event queue bind.")
 
 	// Get the delivery channel.
+	// args: queue, consumerString, autoAck, exclusive, noLocal, noWait, args
 	delivery, err := channel.Consume(q.Name, "server-consumer", false, false, false, false, nil)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Warn("[Server-HealthChange] Start message process failed, consume failed.")
@@ -72,7 +73,7 @@ func Start() {
 	// Keep getting the payload from the channel.
 	for each := range delivery {
 		handler(&each)
-		each.Ack(true)
+		each.Ack(false)
 	}
 }
 
